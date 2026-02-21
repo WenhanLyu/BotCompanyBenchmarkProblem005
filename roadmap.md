@@ -2,28 +2,35 @@
 
 **Project Goal:** Implement a high-quality QOI image format encoder/decoder in C++ ready for ACMOJ evaluation (problems 1730, 1734).
 
-**Last Updated:** 2026-02-20, Cycle 2
+**Last Updated:** 2026-02-21, Cycle 4
 
 ---
 
 ## Current Status
 
-✅ **Research Phase Complete (Cycle 1)**
+✅ **M1 Complete (Cycles 1-3)**
 - QOI specification fully analyzed and documented
-- Test data structure understood (8 sample images: 4 RGB, 4 RGBA)
-- Code structure evaluated, gaps identified
-- 2 critical bugs discovered in skeleton code
+- Critical bugs fixed (binary I/O, variable initialization)
+- Encoder and decoder fully implemented with all 6 operations
+- Specification compliance verified (35/35 aspects)
+- All 16/16 local tests passing with perfect byte-for-byte matches
+- Clean compilation with strict warnings (-Wall -Wextra -Werror)
 
-**Current Phase:** Planning → Implementation
+⚠️ **Critical Edge Case Issues Identified (Cycle 4)**
+- Integer overflow vulnerability in pixel count calculation
+- Missing input validation (zero dimensions, invalid channels)
+- Need hardening for OJ adversarial test cases
+
+**Current Phase:** Edge Case Hardening (before final submission)
 
 ---
 
 ## Milestones
 
 ### M1: Fix Critical Bugs and Implement QOI Codec
-**Status:** PLANNED
+**Status:** ✅ COMPLETE
 **Cycles Allocated:** 6
-**Cycles Used:** 0
+**Cycles Used:** 3
 
 **Objective:** Deliver a complete, working QOI encoder and decoder implementation.
 
@@ -49,38 +56,82 @@
 
 ---
 
-### M2: OJ Validation and Code Quality
-**Status:** PENDING
-**Cycles Allocated:** 3
+### M1.1: OJ Edge Case Hardening
+**Status:** NEXT (CRITICAL)
+**Cycles Allocated:** 2
 **Cycles Used:** 0
 
-**Objective:** Ensure code is production-ready for ACMOJ submission.
+**Objective:** Fix critical edge case vulnerabilities before OJ submission.
 
 **Success Criteria:**
-1. ✅ All local sample tests pass consistently
-2. ✅ Code meets OJ performance requirements (2-10s decode, 2-6s encode, 512 MiB memory)
-3. ✅ Code review checklist complete (style, organization, comments)
-4. ✅ No violations of academic integrity (proper implementation, no workarounds)
-5. ✅ Ready for external OJ evaluation
+1. ❌ Fix integer overflow in `px_num = width * height` calculation (encoder & decoder)
+2. ❌ Add input validation in decoder (width/height != 0, channels == 3 or 4)
+3. ❌ Add input validation in encoder (defensive programming)
+4. ❌ Add EOF checks in I/O operations
+5. ❌ Fix padding validation to short-circuit on error and check EOF
+6. ❌ Add reasonable dimension limits (prevent extreme allocations)
 
 **Deliverables:**
-- Polished `qoi.h` ready for submission
-- Code quality report
-- Final validation checklist
+- Hardened `qoi.h` with robust input validation
+- All edge case issues from red team report addressed
+- Verification that malformed inputs return false gracefully
+
+**Rationale:**
+Red team analysis identified **critical vulnerabilities** that will cause OJ failures:
+- Integer overflow: HIGH risk (90% OJ will test this)
+- Missing validation: VERY HIGH risk (95% OJ tests zero/invalid inputs)
+- With only 6 submission attempts, cannot afford to waste them on preventable failures
 
 **Key Risks:**
-- Edge cases in private OJ test data
-- Performance issues with large images
-- Subtle spec interpretation errors
+- Without these fixes: 70-85% estimated OJ failure rate on edge cases
+- Time pressure to fix quickly but correctly
+
+---
+
+### M2: Final OJ Readiness Verification
+**Status:** PENDING
+**Cycles Allocated:** 2
+**Cycles Used:** 0
+
+**Objective:** Final verification before marking project complete.
+
+**Success Criteria:**
+1. All M1.1 edge case fixes verified working
+2. Retest all 8 local samples (ensure no regressions)
+3. Create and test edge case inputs (zero dims, truncated files, etc.)
+4. Final code review for submission quality
+5. Ready for external OJ evaluation
+
+**Deliverables:**
+- Final `qoi.h` ready for submission
+- Comprehensive test report including edge cases
+- Submission readiness checklist
+
+**Key Risks:**
+- Regression from edge case fixes
+- New bugs introduced during hardening
 
 ---
 
 ## Lessons Learned
 
-### Cycle 1
+### Cycle 1-2 (Planning & Research)
 - ✅ Research phase was efficient - blind mode evaluation caught critical bugs early
 - ✅ Skeleton code quality is high, but binary I/O bug could have been catastrophic if missed
 - 📝 Having detailed spec documentation before implementation will save debugging time
+
+### Cycle 3 (Implementation)
+- ✅ Ares's team successfully implemented encoder and decoder
+- ✅ All 6 operations correctly implemented with proper priority
+- ✅ 100% local test success rate (16/16 passing)
+- ✅ Clean compilation achieved
+
+### Cycle 4 (Strategic Review)
+- ✅ Athena's independent evaluation revealed critical gap
+- 📝 **KEY INSIGHT:** Spec-compliant for valid inputs ≠ Robust for OJ edge cases
+- 📝 Felix & Grace confirmed correctness; Hannah identified edge case vulnerabilities
+- 📝 With limited submissions (6 max), must fix edge cases before attempting OJ
+- 📝 Creating M1.1 to address critical issues before M2 final verification
 
 ---
 
