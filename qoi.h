@@ -158,7 +158,7 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
     }
 
     // qoi-padding part
-    for (int i = 0; i < sizeof(QOI_PADDING) / sizeof(QOI_PADDING[0]); ++i) {
+    for (size_t i = 0; i < sizeof(QOI_PADDING) / sizeof(QOI_PADDING[0]); ++i) {
         QoiWriteU8(QOI_PADDING[i]);
     }
 
@@ -273,7 +273,7 @@ bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &co
     }
 
     bool valid = true;
-    for (int i = 0; i < sizeof(QOI_PADDING) / sizeof(QOI_PADDING[0]); ++i) {
+    for (size_t i = 0; i < sizeof(QOI_PADDING) / sizeof(QOI_PADDING[0]); ++i) {
         if (QoiReadU8() != QOI_PADDING[i]) valid = false;
     }
 
