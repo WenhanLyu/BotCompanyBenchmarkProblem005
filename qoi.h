@@ -198,7 +198,73 @@ bool QoiDecode(uint32_t &width, uint32_t &height, uint8_t &channels, uint8_t &co
 
     for (int i = 0; i < px_num; ++i) {
 
-        // TODO
+        if (run > 0) {
+            // Continue the run - use previous pixel values
+            run--;
+        } else {
+            // Read a tag byte
+            uint8_t tag = QoiReadU8();
+            bool update_history = true;
+
+            if (tag == QOI_OP_RGB_TAG) {
+                // RGB operation
+                r = QoiReadU8();
+                g = QoiReadU8();
+                b = QoiReadU8();
+                // a remains unchanged
+            } else if (tag == QOI_OP_RGBA_TAG) {
+                // RGBA operation
+                r = QoiReadU8();
+                g = QoiReadU8();
+                b = QoiReadU8();
+                a = QoiReadU8();
+            } else {
+                uint8_t tag_type = tag & QOI_MASK_2;
+
+                if (tag_type == QOI_OP_RUN_TAG) {
+                    // RUN operation: lower 6 bits represent (run_length - 1)
+                    run = tag & 0x3f;
+                    update_history = false;
+                } else if (tag_type == QOI_OP_LUMA_TAG) {
+                    // LUMA operation
+                    uint8_t byte2 = QoiReadU8();
+                    int dg = (tag & 0x3f) - 32;
+                    int dr_dg = ((byte2 >> 4) & 0x0f) - 8;
+                    int db_dg = (byte2 & 0x0f) - 8;
+
+                    r = r + dr_dg + dg;
+                    g = g + dg;
+                    b = b + db_dg + dg;
+                    // a remains unchanged
+                } else if (tag_type == QOI_OP_DIFF_TAG) {
+                    // DIFF operation
+                    int dr = ((tag >> 4) & 0x03) - 2;
+                    int dg = ((tag >> 2) & 0x03) - 2;
+                    int db = (tag & 0x03) - 2;
+
+                    r = r + dr;
+                    g = g + dg;
+                    b = b + db;
+                    // a remains unchanged
+                } else { // tag_type == QOI_OP_INDEX_TAG
+                    // INDEX operation
+                    int index = tag & 0x3f;
+                    r = history[index][0];
+                    g = history[index][1];
+                    b = history[index][2];
+                    a = history[index][3];
+                }
+            }
+
+            // Update history for all operations except RUN
+            if (update_history) {
+                int hash = QoiColorHash(r, g, b, a);
+                history[hash][0] = r;
+                history[hash][1] = g;
+                history[hash][2] = b;
+                history[hash][3] = a;
+            }
+        }
 
         QoiWriteU8(r);
         QoiWriteU8(g);
