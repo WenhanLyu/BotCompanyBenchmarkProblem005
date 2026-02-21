@@ -74,9 +74,82 @@ bool QoiEncode(uint32_t width, uint32_t height, uint8_t channels, uint8_t colors
         r = QoiReadU8();
         g = QoiReadU8();
         b = QoiReadU8();
-        if (channels == 4) a = QoiReadU8();
+        if (channels == 4) {
+            a = QoiReadU8();
+        } else {
+            a = 255u;
+        }
 
-        // TODO
+        // Check if pixel equals previous pixel (RUN operation)
+        if (r == pre_r && g == pre_g && b == pre_b && a == pre_a) {
+            run++;
+            // Output run if it reaches max (62) or if this is the last pixel
+            if (run == 62 || i == px_num - 1) {
+                QoiWriteU8(QOI_OP_RUN_TAG | (run - 1));
+                run = 0;
+            }
+        } else {
+            // Output any pending run first
+            if (run > 0) {
+                QoiWriteU8(QOI_OP_RUN_TAG | (run - 1));
+                run = 0;
+            }
+
+            // Calculate hash for history lookup
+            int hash = QoiColorHash(r, g, b, a);
+
+            // Check INDEX operation
+            if (history[hash][0] == r && history[hash][1] == g &&
+                history[hash][2] == b && history[hash][3] == a) {
+                QoiWriteU8(QOI_OP_INDEX_TAG | hash);
+            } else {
+                // Calculate differences for DIFF and LUMA
+                int dr = (int)r - (int)pre_r;
+                int dg = (int)g - (int)pre_g;
+                int db = (int)b - (int)pre_b;
+
+                // Check DIFF operation (small differences, alpha unchanged)
+                if (a == pre_a && dr >= -2 && dr <= 1 && dg >= -2 && dg <= 1 && db >= -2 && db <= 1) {
+                    QoiWriteU8(QOI_OP_DIFF_TAG | ((dr + 2) << 4) | ((dg + 2) << 2) | (db + 2));
+                }
+                // Check LUMA operation (medium differences via green channel, alpha unchanged)
+                else if (a == pre_a && dg >= -32 && dg <= 31) {
+                    int dr_dg = dr - dg;
+                    int db_dg = db - dg;
+                    if (dr_dg >= -8 && dr_dg <= 7 && db_dg >= -8 && db_dg <= 7) {
+                        QoiWriteU8(QOI_OP_LUMA_TAG | (dg + 32));
+                        QoiWriteU8(((dr_dg + 8) << 4) | (db_dg + 8));
+                    } else {
+                        // LUMA range exceeded, use RGB
+                        QoiWriteU8(QOI_OP_RGB_TAG);
+                        QoiWriteU8(r);
+                        QoiWriteU8(g);
+                        QoiWriteU8(b);
+                    }
+                }
+                // RGB operation (alpha unchanged)
+                else if (a == pre_a) {
+                    QoiWriteU8(QOI_OP_RGB_TAG);
+                    QoiWriteU8(r);
+                    QoiWriteU8(g);
+                    QoiWriteU8(b);
+                }
+                // RGBA operation (alpha changed)
+                else {
+                    QoiWriteU8(QOI_OP_RGBA_TAG);
+                    QoiWriteU8(r);
+                    QoiWriteU8(g);
+                    QoiWriteU8(b);
+                    QoiWriteU8(a);
+                }
+            }
+
+            // Always update history for every pixel seen
+            history[hash][0] = r;
+            history[hash][1] = g;
+            history[hash][2] = b;
+            history[hash][3] = a;
+        }
 
         pre_r = r;
         pre_g = g;
